@@ -1,0 +1,579 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== USUÁRIOS ====================
+
+model User {
+  id String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  phone     String?
+  avatar    String?
+  type      String   @default("customer") // customer, merchant, driver, admin
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  merchant Merchant?
+  driver Driver?
+  orders         Order[]
+  addresses      Address[]
+  favorites      Favorite[]
+  reviews Review[]
+  coupons        CouponUser[]
+  loyaltyPoints  LoyaltyAccount?
+  wallet         Wallet?
+  notifications  Notification[]
+  chatMessages   ChatMessage[]
+  referralsSent Referral[]  @relation("Referrer")
+  referralsRecv  Referral[]  @relation("Referee")
+  deviceTokens   DeviceToken[]
+
+  @@map("users")
+}
+
+model DeviceToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  token     String
+  platform  String   @default("android") // android, ios, web
+  createdAt DateTime @default(now())
+
+  @@map("device_tokens")
+}
+
+// ==================== ENDEREÇOS ====================
+
+model Address {
+  id String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  label        String   @default("Casa") // Casa, Trabalho, Outro
+  street       String
+  number       String
+  complement String?
+  neighborhood String
+  city         String
+  state        String   @default("SP")
+  zipCode      String
+  lat Float?
+  lng          Float?
+  isDefault    Boolean  @default(false)
+  instructions String?  // Instruções de entrega
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  orders Order[]
+
+  @@map("addresses")
+}
+
+// ==================== LOJISTAS ====================
+
+model Merchant {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  user             User     @relation(fields: [userId], references: [id])
+  storeName        String
+  storeType        String   // restaurant, market, pharmacy, pet, etc
+  storeDescription String?
+  logo String?
+  banner String?
+  cnpj             String?
+  status String   @default("pending") // pending, active, suspended, blocked
+  avgSeparationTime Int?
+  rating Float    @default(5.0)
+  totalRatings Int      @default(0)
+  minOrderValue   Float    @default(0)
+  deliveryFee     Float    @default(5.90)
+  deliveryTime    String @default("30-45 min") // Tempo estimado
+  deliveryRadius  Float    @default(5) // km
+  isOpen          Boolean  @default(true)
+  workingHours    String? // JSON com horários
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  products Product[]
+  orders Order[]
+  reviews  Review[]
+  promotions Promotion[]
+
+  @@map("merchants")
+}
+
+// ==================== ENTREGADORES ====================
+
+model Driver {
+  id String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id])
+  status       String   @default("available") // available, busy, offline
+  vehicleType  String   @default("bike") // bike, motorcycle, car
+  rating Float    @default(5.0)
+  totalRatings Int      @default(0)
+  currentLat   Float?
+  currentLng   Float?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  orders Order[]
+
+  @@map("drivers")
+}
+
+// ==================== PRODUTOS ====================
+
+model Product {
+  id String   @id @default(cuid())
+  merchantId   String
+  merchant     Merchant @relation(fields: [merchantId], references: [id])
+  title        String
+  description  String?
+  price        Float
+  originalPrice Float?  // Para promoções
+  thumb        String?
+  images       String?  // JSON array de imagens
+  category     String
+  tags         String? // JSON array de tags
+  options      String? // JSON com opções personalizáveis
+  active       Boolean  @default(true)
+  inStock      Boolean  @default(true)
+  stockQty     Int      @default(0)
+  preparationTime Int?  // minutos
+  calories Int?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  orderItems   OrderItem[]
+  favorites    Favorite[]
+  reviews Review[]
+
+  @@map("products")
+}
+
+// ==================== PEDIDOS ====================
+
+model Order {
+  id              String   @id @default(cuid())
+  customerId      String
+  customer        User     @relation(fields: [customerId], references: [id])
+  merchantId      String
+  merchant       Merchant @relation(fields: [merchantId], references: [id])
+  driverId        String?
+  driver         Driver?  @relation(fields: [driverId], references: [id])
+  addressId      String
+  address        Address  @relation(fields: [addressId], references: [id])
+
+  status         String   @default("pending")
+  // pending → confirmed → separating → ready → on_the_way → delivered
+  // ou: cancelled, refunded
+
+  subtotal       Float
+  discount       Float    @default(0)
+  deliveryFee    Float    @default(5.90)
+  total Float
+
+  paymentMethod  String   // pix, credit, debit, money
+  paymentStatus  String   @default("pending") // pending, confirmed, failed, refunded
+  pixCode String?
+  pixQrCode      String?
+  pixExpiration DateTime?
+
+  couponId       String?
+
+  scheduledAt    DateTime? // Para entregas agendadas
+  estimatedTime  Int?     // minutos
+
+  // Rastreamento
+  currentLat     Float?
+  currentLng     Float?
+
+  notes          String?  // Observações do cliente
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  items OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id String   @id @default(cuid())
+  orderId        String
+  order          Order    @relation(fields: [orderId], references: [id])
+  productId      String
+  product        Product  @relation(fields: [productId], references: [id])
+  merchantId     String
+  quantity       Int
+  priceAtMoment  Float
+  options String?  // JSON com personalizações
+
+  @@map("order_items")
+}
+
+// ==================== AVALIAÇÕES ====================
+
+model Review {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  merchantId   String
+  merchant     Merchant @relation(fields: [merchantId], references: [id])
+  productId    String?
+  product      Product? @relation(fields: [productId], references: [id])
+  orderId      String
+
+  rating       Int      // 1-5
+  comment String?
+  photos String?  // JSON array de URLs
+
+  // Métricas específicas
+  foodRating Int?     // 1-5 (qualidade da comida)
+  deliveryRating Int?    // 1-5 (velocidade da entrega)
+
+  isAnonymous  Boolean  @default(false)
+  isVerified   Boolean  @default(true) // Comprou no app
+
+  helpfulCount Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("reviews")
+}
+
+// ==================== CUPONS ====================
+
+model Coupon {
+  id           String   @id @default(cuid())
+  code         String   @unique
+  title        String
+  description  String?
+
+  type         String   // percentage, fixed, free_delivery, first_order
+  value        Float    // percentual ou valor fixo
+
+  minOrderValue Float @default(0)
+  maxDiscount   Float?  // Para cupons de percentual
+
+  merchantId   String?  // null = válido para todas as lojas
+  isGlobal     Boolean  @default(true)
+
+  maxUses      Int?     // Limite de usos total
+  usedCount    Int      @default(0)
+  maxPerUser   Int      @default(1)
+
+  startsAt     DateTime @default(now())
+  expiresAt    DateTime
+
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  users CouponUser[]
+
+  @@map("coupons")
+}
+
+model CouponUser {
+  id String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  couponId   String
+  coupon     Coupon   @relation(fields: [couponId], references: [id])
+  orderId    String?
+  usedAt     DateTime?
+  createdAt  DateTime @default(now())
+
+  @@map("coupon_users")
+}
+
+// ==================== FIDELIDADE ====================
+
+model LoyaltyAccount {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id])
+
+  points       Int      @default(0)
+  lifetimePoints Int    @default(0)
+  tier         String   @default("bronze") // bronze, silver, gold, platinum
+  tierProgress Float @default(0) // 0-100%
+
+  // Recompensas resgatadas
+  redeemedRewards Int @default(0)
+
+  // Conquistas
+  achievements String? // JSON array de conquistas
+
+  updatedAt    DateTime @updatedAt
+
+  transactions LoyaltyTransaction[]
+
+  @@map("loyalty_accounts")
+}
+
+model LoyaltyTransaction {
+  id           String   @id @default(cuid())
+  accountId    String
+  account     LoyaltyAccount @relation(fields: [accountId], references: [id])
+
+  type String   // earn, redeem, expire, bonus
+  points      Int
+  description String
+  orderId     String?
+  expiresAt   DateTime?
+
+  createdAt   DateTime @default(now())
+
+  @@map("loyalty_transactions")
+}
+
+model LoyaltyReward {
+  id           String   @id @default(cuid())
+  name String
+  description  String?
+  pointsCost Int
+  type String   // discount, free_product, free_delivery, cashback
+  value        Float    // valor do desconto
+  minOrderValue Float   @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  @@map("loyalty_rewards")
+}
+
+// ==================== WALLET ====================
+
+model Wallet {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id])
+
+  balance      Float    @default(0)
+  cashbackBalance Float @default(0)
+
+  updatedAt    DateTime @updatedAt
+
+  transactions WalletTransaction[]
+
+  @@map("wallets")
+}
+
+model WalletTransaction {
+  id           String   @id @default(cuid())
+  walletId     String
+  wallet Wallet    @relation(fields: [walletId], references: [id])
+
+  type         String   // deposit, withdraw, cashback, payment, refund, bonus
+  amount       Float
+  description  String
+  orderId      String?
+
+  // Para PIX
+  pixKey       String?
+  pixBank String?
+  pixStatus    String?  // pending, completed, failed
+
+  createdAt    DateTime @default(now())
+
+  @@map("wallet_transactions")
+}
+
+// ==================== PROMOÇÕES ====================
+
+model Promotion {
+  id           String   @id @default(cuid())
+  merchantId   String
+  merchant     Merchant @relation(fields: [merchantId], references: [id])
+
+  title        String
+  description String?
+  type        String   // banner, combo, flash, milestone
+
+  // Configuração
+  discountType  String  // percentage, fixed
+  discountValue Float
+
+  // Condições
+  minOrderValue Float   @default(0)
+  maxDiscount   Float?
+
+  // Produtos específicos (null = todos)
+  productIds   String? // JSON array
+
+  startsAt     DateTime @default(now())
+  endsAt       DateTime
+
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  @@map("promotions")
+}
+
+// ==================== FAVORITOS ====================
+
+model Favorite {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  productId    String
+  product      Product  @relation(fields: [productId], references: [id])
+  createdAt    DateTime @default(now())
+
+  @@unique([userId, productId])
+  @@map("favorites")
+}
+
+// ==================== CHAT ====================
+
+model ChatConversation {
+  id           String   @id @default(cuid())
+  type         String   @default("support") // support, order, driver
+  orderId      String?
+ customerId   String
+  merchantId   String?
+  driverId     String?
+
+  lastMessage  String?
+  lastMessageAt DateTime?
+
+  customerUnread Int @default(0)
+  merchantUnread Int @default(0)
+  driverUnread   Int   @default(0)
+
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  messages ChatMessage[]
+
+  @@map("chat_conversations")
+}
+
+model ChatMessage {
+  id             String   @id @default(cuid())
+  conversationId String
+  conversation  ChatConversation @relation(fields: [conversationId], references: [id])
+
+  senderId      String
+  sender User     @relation(fields: [senderId], references: [id])
+  senderType    String   // customer, merchant, driver, bot
+
+  type          String   @default("text") // text, image, location, system
+  content       String
+
+  // Para localização do entregador
+  locationLat   Float?
+  locationLng   Float?
+
+  isRead        Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  @@map("chat_messages")
+}
+
+// ==================== NOTIFICAÇÕES ====================
+
+model Notification {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+
+  type         String   // order, promo, loyalty, system, chat
+  title String
+  body         String
+  data         String?  // JSON com dados extras
+
+  isRead       Boolean  @default(false)
+  readAt       DateTime?
+
+  createdAt    DateTime @default(now())
+
+  @@map("notifications")
+}
+
+// ==================== INDICAÇÕES ====================
+
+model Referral {
+  id           String   @id @default(cuid())
+  referrerId   String
+  referrer     User     @relation("Referrer", fields: [referrerId], references: [id])
+  refereeId    String
+  referee     User     @relation("Referee", fields: [refereeId], references: [id])
+
+  status       String   @default("pending") // pending, completed, expired
+  rewardSent Boolean  @default(false)
+
+  createdAt    DateTime @default(now())
+  completedAt  DateTime?
+
+  @@unique([referrerId, refereeId])
+  @@map("referrals")
+}
+
+// ==================== GAMIFICAÇÃO ====================
+
+model Achievement {
+  id           String   @id @default(cuid())
+  code         String   @unique
+  name         String
+  description  String
+  icon         String
+  category     String   // orders, spending, loyalty, social
+
+  requirement  String // JSON com requisitos
+  rewardPoints Int      @default(0)
+
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  userAchievements UserAchievement[]
+
+  @@map("achievements")
+}
+
+model UserAchievement {
+  id String   @id @default(cuid())
+  userId         String
+  achievementId  String
+  achievement Achievement @relation(fields: [achievementId], references: [id])
+
+  unlockedAt     DateTime @default(now())
+
+  @@unique([userId, achievementId])
+  @@map("user_achievements")
+}
+
+// ==================== CATEGORIAS ====================
+
+model Category {
+  id           String   @id @default(cuid())
+  name         String
+  slug         String   @unique
+  icon         String
+  image String?
+  color        String?
+  sortOrder    Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  @@map("categories")
+}
+
+// ==================== SEARCH HISTORY ====================
+
+model SearchHistory {
+  id           String   @id @default(cuid())
+  userId       String
+  query        String
+  resultsCount Int?
+  createdAt    DateTime @default(now())
+
+  @@map("search_history")
+}

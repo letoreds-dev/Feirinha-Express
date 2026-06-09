@@ -1,0 +1,14 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "installCommand": "npm install",
+  "devCommand": "npm run dev",
+  "regions": ["gru1"],
+  "env": {
+    "NEXT_PUBLIC_API_URL": "@api-url"
+  },
+  "secrets": {
+    "api-url": "https://feirinha-api.up.railway.app"
+  }
+}

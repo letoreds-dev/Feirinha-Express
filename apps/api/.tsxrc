@@ -1,0 +1,5 @@
+{
+  "tsconfig": "./tsconfig.json",
+  "experimentalTsx": true,
+  "transpileOnly": true
+}

@@ -1,0 +1,99 @@
+{
+  "timestamp": "2026-06-09T18:33:08.680Z",
+  "tick": 12,
+  "stats": {
+    "totalTasks": 28,
+    "completed": 24,
+    "inProgress": 0,
+    "totalChanges": 51
+  },
+  "topAgents": [
+    {
+      "name": "Marina",
+      "icon": "👩‍💻",
+      "tasks": 1
+    },
+    {
+      "name": "Lucas",
+      "icon": "🎨",
+      "tasks": 1
+    },
+    {
+      "name": "Ana",
+      "icon": "✨",
+      "tasks": 1
+    },
+    {
+      "name": "Bruno",
+      "icon": "🔍",
+      "tasks": 1
+    },
+    {
+      "name": "Carla",
+      "icon": "♿",
+      "tasks": 1
+    }
+  ],
+  "recentTasks": [
+    {
+      "title": "Toast notifications",
+      "type": "feature",
+      "agent": "Ana",
+      "icon": "✨"
+    },
+    {
+      "title": "Escanear vulnerabilidades OWASP",
+      "type": "security",
+      "agent": "Quitéria",
+      "icon": "🛡️"
+    },
+    {
+      "title": "Build optimization",
+      "type": "improvement",
+      "agent": "Natalia",
+      "icon": "☁️"
+    },
+    {
+      "title": "Índices no PostgreSQL",
+      "type": "improvement",
+      "agent": "Helena",
+      "icon": "🔍"
+    },
+    {
+      "title": "E2E tests Cypress",
+      "type": "feature",
+      "agent": "Gabriela",
+      "icon": "🧪"
+    },
+    {
+      "title": "Install prompt PWA",
+      "type": "feature",
+      "agent": "Alice",
+      "icon": "📲"
+    },
+    {
+      "title": "Implementar Redis cache",
+      "type": "improvement",
+      "agent": "Igor",
+      "icon": "📈"
+    },
+    {
+      "title": "Paginação API",
+      "type": "feature",
+      "agent": "Carlos",
+      "icon": "⚙️"
+    },
+    {
+      "title": "Relatório semanal",
+      "type": "feature",
+      "agent": "Ivan",
+      "icon": "📊"
+    },
+    {
+      "title": "Design system completo",
+      "type": "improvement",
+      "agent": "Lucas",
+      "icon": "🎨"
+    }
+  ]
+}

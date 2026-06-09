@@ -1,0 +1,421 @@
+// ============================================
+// Feirinha Express - Schema PostgreSQL (Neon)
+// ============================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== USUÁRIOS ====================
+
+model User {
+  id String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  phone     String?
+  avatar    String?
+  type      String   @default("customer") // customer, merchant, driver, admin
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  merchant Merchant?
+ driver         Driver?
+  orders         Order[]
+  addresses      Address[]
+  favorites      Favorite[]
+  reviews        Review[]
+  coupons        CouponUser[]
+  loyaltyPoints  LoyaltyAccount?
+  notifications Notification[]
+  deviceTokens   DeviceToken[]
+  searchHistory  SearchHistory[]
+  wallet Wallet?
+  referrals      Referral[]         @relation("ReferralReferee")
+  referredBy     Referral[]         @relation("ReferralReferrer")
+  chatMessages   ChatMessage[]      @relation("MessageSender")
+  chatConversations ChatConversation[] @relation("ConversationCustomer")
+}
+
+model Merchant {
+  id String   @id @default(cuid())
+  userId          String   @unique
+  user User     @relation(fields: [userId], references: [id])
+  storeName       String
+  storeType       String
+  storeDescription String?
+  logo            String?
+  banner          String?
+  rating          Float @default(5.0)
+  totalRatings    Int     @default(0)
+  deliveryTime    Int     @default(40) // minutos
+  deliveryFee     Float   @default(5.90)
+  minOrderValue   Float   @default(0)
+  status          String  @default("pending") // pending, active, suspended, blocked
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  products Product[]
+  orders          Order[]
+  reviews         Review[]
+  coupons         Coupon[]
+  chatConversations ChatConversation[] @relation("ConversationMerchant")
+}
+
+model Driver {
+  id String   @id @default(cuid())
+  userId    String   @unique
+  user User     @relation(fields: [userId], references: [id])
+  status    String   @default("offline") // available, busy, offline
+  currentLat Float?
+  currentLng Float?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders    Order[]
+  chatConversations ChatConversation[] @relation("ConversationDriver")
+}
+
+// ==================== PRODUTOS ====================
+
+model Product {
+  id           String   @id @default(cuid())
+  merchantId   String
+  merchant     Merchant @relation(fields: [merchantId], references: [id])
+  title        String
+  description String?
+  price        Float
+  originalPrice Float?
+  thumb        String?
+  images       String?  // JSON array
+  category     String
+  tags         String?  // JSON array
+  options String?  // JSON array
+  active       Boolean  @default(true)
+  inStock      Boolean  @default(true)
+  stockQty     Int      @default(0)
+  preparationTime Int?  // minutos
+  calories     Int?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  orderItems   OrderItem[]
+  favorites    Favorite[]
+  reviews      Review[]
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  icon      String
+  image     String?
+  color     String?
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ==================== PEDIDOS ====================
+
+model Order {
+  id              String   @id @default(cuid())
+  customerId      String
+  customer        User     @relation(fields: [customerId], references: [id])
+  merchantId      String
+  merchant        Merchant @relation(fields: [merchantId], references: [id])
+  driverId        String?
+  driver Driver?  @relation(fields: [driverId], references: [id])
+  addressId       String?
+  address         Address? @relation(fields: [addressId], references: [id])
+  status String   @default("pending") // pending, confirmed, separating, ready, on_the_way, delivered, cancelled
+  subtotal       Float
+  deliveryFee     Float    @default(0)
+  discount Float    @default(0)
+  total           Float
+  paymentMethod  String   // pix, credit, debit, money
+  paymentStatus   String   @default("pending") // pending, paid, refunded
+  couponId        String?
+  coupon          Coupon?  @relation(fields: [couponId], references: [id])
+  notes           String?
+  estimatedTime Int?     // minutos
+  currentLat      Float?
+  currentLng      Float?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  items      OrderItem[]
+  reviews    Review[]
+  chatConversations ChatConversation[]
+}
+
+model OrderItem {
+  id String   @id @default(cuid())
+  orderId       String
+  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId     String
+  product       Product @relation(fields: [productId], references: [id])
+  merchantId    String
+  quantity      Int
+  priceAtMoment Float
+  options       String?  // JSON array
+  createdAt     DateTime @default(now())
+}
+
+model Address {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  label        String   @default("Casa")
+  street       String
+  number       String
+  complement   String?
+  neighborhood String
+  city         String
+  state        String   @default("SP")
+  zipCode      String
+  lat          Float?
+  lng          Float?
+  instructions String?
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  orders Order[]
+}
+
+// ==================== AVALIAÇÕES ====================
+
+model Review {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  merchantId      String
+  merchant        Merchant @relation(fields: [merchantId], references: [id])
+  orderId         String
+  order Order    @relation(fields: [orderId], references: [id])
+  productId      String?
+  product        Product? @relation(fields: [productId], references: [id])
+  rating         Float
+  comment        String?
+  photos         String?  // JSON array
+  foodRating     Float?
+  deliveryRating Float?
+  helpfulCount   Int      @default(0)
+  isAnonymous    Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+// ==================== CUPONS ====================
+
+model Coupon {
+  id String   @id @default(cuid())
+  code         String   @unique
+  title        String
+  description  String?
+  type         String   // percentage, fixed, free_delivery, first_order
+  value        Float
+  minOrderValue Float   @default(0)
+  maxDiscount  Float?
+  merchantId   String?
+  merchant     Merchant? @relation(fields: [merchantId], references: [id])
+  isGlobal     Boolean  @default(true)
+  maxUses      Int?
+  usedCount    Int      @default(0)
+  maxPerUser   Int      @default(1)
+  startsAt     DateTime @default(now())
+  expiresAt    DateTime
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  orders     Order[]
+  users CouponUser[]
+}
+
+model CouponUser {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  couponId  String
+  coupon    Coupon   @relation(fields: [couponId], references: [id])
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@unique([userId, couponId])
+}
+
+// ==================== FIDELIDADE ====================
+
+model LoyaltyAccount {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id])
+  points Int      @default(0)
+  lifetimePoints  Int      @default(0)
+  tier String   @default("bronze") // bronze, silver, gold, platinum
+  redeemedRewards Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  transactions LoyaltyTransaction[]
+}
+
+model LoyaltyReward {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  type        String   // discount, free_product, cashback
+  value       Float
+  pointsCost  Int
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model LoyaltyTransaction {
+  id          String   @id @default(cuid())
+  accountId   String
+  account     LoyaltyAccount @relation(fields: [accountId], references: [id])
+  type        String   // earn, redeem, expired, bonus
+  points      Int
+  description String?
+  orderId     String?
+  createdAt   DateTime @default(now())
+}
+
+// ==================== CARTEIRA ====================
+
+model Wallet {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  user             User     @relation(fields: [userId], references: [id])
+  balance          Float    @default(0)
+  cashbackBalance  Float    @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  transactions WalletTransaction[]
+}
+
+model WalletTransaction {
+  id          String   @id @default(cuid())
+  walletId    String
+  wallet      Wallet   @relation(fields: [walletId], references: [id])
+  type        String   // deposit, withdraw, payment, bonus, cashback
+  amount      Float
+  description String?
+  pixKey      String?
+  pixBank     String?
+  pixStatus   String?  // pending, completed, failed
+  createdAt   DateTime @default(now())
+}
+
+// ==================== INDICAÇÕES ====================
+
+model Referral {
+  id         String   @id @default(cuid())
+  referrerId String
+  referrer   User     @relation("ReferralReferrer", fields: [referrerId], references: [id])
+  refereeId  String
+  referee User     @relation("ReferralReferee", fields: [refereeId], references: [id])
+  status     String   @default("pending") // pending, completed
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([referrerId, refereeId])
+}
+
+// ==================== FAVORITOS ====================
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+}
+
+// ==================== NOTIFICAÇÕES ====================
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String   // order, promo, loyalty, system, chat
+  title     String
+  body      String
+  data      String?  // JSON
+  isRead    Boolean  @default(false)
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+}
+
+model DeviceToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  token     String   @unique
+  platform  String   // android, ios, web
+  createdAt DateTime @default(now())
+}
+
+// ==================== CHAT ====================
+
+model ChatConversation {
+  id              String   @id @default(cuid())
+  type            String   @default("support") // support, order, driver
+  customerId      String
+  customer        User     @relation("ConversationCustomer", fields: [customerId], references: [id])
+  merchantId      String?
+  merchant        Merchant? @relation("ConversationMerchant", fields: [merchantId], references: [id])
+  driverId        String?
+  driver          Driver?   @relation("ConversationDriver", fields: [driverId], references: [id])
+  orderId         String?
+  order           Order?    @relation(fields: [orderId], references: [id])
+  lastMessage     String?
+  lastMessageAt   DateTime?
+  customerUnread  Int      @default(0)
+  merchantUnread  Int      @default(0)
+  driverUnread    Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  messages ChatMessage[]
+}
+
+model ChatMessage {
+  id             String   @id @default(cuid())
+  conversationId String
+  conversation   ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User     @relation("MessageSender", fields: [senderId], references: [id])
+  senderType     String   // customer, merchant, driver, system
+  type           String   @default("text") // text, image, location, system
+  content        String
+  locationLat    Float?
+  locationLng    Float?
+  isRead         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+}
+
+// ==================== BUSCA ====================
+
+model SearchHistory {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  query        String
+  resultsCount Int?
+  createdAt    DateTime @default(now())
+}
