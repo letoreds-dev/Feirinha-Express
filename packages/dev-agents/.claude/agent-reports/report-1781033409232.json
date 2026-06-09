@@ -1,0 +1,99 @@
+{
+  "timestamp": "2026-06-09T19:30:09.232Z",
+  "tick": 695,
+  "stats": {
+    "totalTasks": 28,
+    "completed": 28,
+    "inProgress": 0,
+    "totalChanges": 59
+  },
+  "topAgents": [
+    {
+      "name": "Natalia",
+      "icon": "☁️",
+      "tasks": 2
+    },
+    {
+      "name": "Marina",
+      "icon": "👩‍💻",
+      "tasks": 1
+    },
+    {
+      "name": "Lucas",
+      "icon": "🎨",
+      "tasks": 1
+    },
+    {
+      "name": "Ana",
+      "icon": "✨",
+      "tasks": 1
+    },
+    {
+      "name": "Bruno",
+      "icon": "🔍",
+      "tasks": 1
+    }
+  ],
+  "recentTasks": [
+    {
+      "title": "E2E tests Cypress",
+      "type": "feature",
+      "agent": "Gabriela",
+      "icon": "🧪"
+    },
+    {
+      "title": "Install prompt PWA",
+      "type": "feature",
+      "agent": "Alice",
+      "icon": "📲"
+    },
+    {
+      "title": "Implementar Redis cache",
+      "type": "improvement",
+      "agent": "Igor",
+      "icon": "📈"
+    },
+    {
+      "title": "Paginação API",
+      "type": "feature",
+      "agent": "Carlos",
+      "icon": "⚙️"
+    },
+    {
+      "title": "Relatório semanal",
+      "type": "feature",
+      "agent": "Ivan",
+      "icon": "📊"
+    },
+    {
+      "title": "Design system completo",
+      "type": "improvement",
+      "agent": "Lucas",
+      "icon": "🎨"
+    },
+    {
+      "title": "Preview deployments",
+      "type": "improvement",
+      "agent": "Natalia",
+      "icon": "☁️"
+    },
+    {
+      "title": "Clean architecture",
+      "type": "refactor",
+      "agent": "Elena",
+      "icon": "🧩"
+    },
+    {
+      "title": "Analytics dashboard",
+      "type": "feature",
+      "agent": "Ulisses",
+      "icon": "📋"
+    },
+    {
+      "title": "Teste de carga com k6",
+      "type": "feature",
+      "agent": "Enzo",
+      "icon": "⚡"
+    }
+  ]
+}
