@@ -54,6 +54,9 @@ prisma/migrations/
 .vercel
 .turbo
 
+# NÃO ignorar vercel.json na raiz (precisa pro deploy)
+# vercel.json (não ignorado)
+
 # Secrets (não comitar!)
 *.pem
 *.key

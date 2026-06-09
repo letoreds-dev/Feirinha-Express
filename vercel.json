@@ -1,0 +1,8 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "npm install && cd apps/web && npm install && npm run build",
+  "outputDirectory": "apps/web/.next",
+  "installCommand": "npm install",
+  "devCommand": "npm run dev",
+  "regions": ["gru1"]
+}
