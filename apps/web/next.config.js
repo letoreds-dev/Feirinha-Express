@@ -2,9 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
-  experimental: {
-    optimizeCss: true
-  },
+  output: 'standalone',
   rewrites: async () => {
     return [
       {
